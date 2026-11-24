@@ -25,13 +25,31 @@ def extract_schedule(text):
     return None
 
 
+def _num(raw: str):
+    """Parse a number with US (1,234.56) or EU (1.234,56) separators."""
+    s = raw.strip().rstrip(",.")
+    if not s:
+        return None
+    if "," in s and "." in s:
+        if s.rfind(",") > s.rfind("."):      # EU: dot thousands, comma decimal
+            s = s.replace(".", "").replace(",", ".")
+        else:                                 # US: comma thousands, dot decimal
+            s = s.replace(",", "")
+    elif "," in s:                            # comma only: 2 trailing digits = decimal
+        s = s.replace(",", ".") if len(s) - s.rfind(",") - 1 == 2 else s.replace(",", "")
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
 def extract_price(text):
-    m = re.search(r"\$\s*([\d,]+(?:\.\d+)?)", text)
+    m = re.search(r"(?:\$|€)\s*([\d][\d.,]*)", text)
     if m:
-        return float(m.group(1).replace(",", ""))
-    m = re.search(r"([\d,]+(?:\.\d+)?)\s*(?:USD|EUR)", text, re.IGNORECASE)
+        return _num(m.group(1))
+    m = re.search(r"([\d][\d.,]*)\s*(?:USD|EUR|€)", text, re.IGNORECASE)
     if m:
-        return float(m.group(1).replace(",", ""))
+        return _num(m.group(1))
     return None
 
 

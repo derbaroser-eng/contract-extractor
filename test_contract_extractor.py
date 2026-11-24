@@ -121,6 +121,22 @@ out1 = run_extract({"text": base_text()})
 out2 = run_extract({"text": base_text()})
 check("deterministic: same output", out1 == out2, f"{out1} vs {out2}")
 
+# --- test 18: EUR symbol prefix (real-world EU contract) ---
+out = run_extract({"text": "Product: Basic. Price: EUR 49.00. Payment: Annual. Note: 49."})
+out_sym = run_extract({"text": "Product: Basic. Price: €49.00. Payment: Annual."})
+check("euro symbol prefix: currency", out_sym.get("currency") == "eur", str(out_sym))
+check("euro symbol prefix: price", out_sym.get("price") == 49.0, str(out_sym))
+
+# --- test 19: EUR symbol suffix (common EU invoice layout) ---
+out_suf = run_extract({"text": "Product: Basic. Price: 49 €. Payment: Annual."})
+check("euro symbol suffix: price", out_suf.get("price") == 49.0, str(out_suf))
+
+# --- test 20: european number format (EU contracts use dot thousands, comma decimals) ---
+out_eu = run_extract({"text": "Product: Pro. Price: €1.234,56. Payment: Annual."})
+check("european number format: price", out_eu.get("price") == 1234.56, str(out_eu))
+out_us = run_extract({"text": "Product: Pro. Price: $1,234.56. Payment: Annual."})
+check("us number format: price", out_us.get("price") == 1234.56, str(out_us))
+
 # --- report ---
 passed = sum(1 for _, ok, _ in results if ok)
 failed = [(n, d) for n, ok, d in results if not ok]
